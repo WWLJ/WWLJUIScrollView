@@ -27,17 +27,12 @@
     if (self) {
         
         self.page = 1;
-        // frame 与父视图的一样高宽
-        self.scroll = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height)];
-        self.scroll.delegate = self;
-        self.scroll.bounces = NO;
-        self.scroll.showsHorizontalScrollIndicator = NO;
-        [self addSubview:self.scroll];
-        
-        
+
     }
     return self;
 }
+
+
 
 #pragma mark -
 #pragma  mark 给scroll提供图片名字,添加图片
@@ -46,11 +41,11 @@
     if (state == YES) {
         // 计时器,每隔几秒干什么事(实现自动滚动功能)
         if (self.timer) {
-            [self.timer invalidate];//停止
-            self.timer = [NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(timeAction:) userInfo:nil repeats:YES];
+            [self stopTimer];
+            [self startTimer];
             _page = 1;
         }else{
-            self.timer = [NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(timeAction:) userInfo:nil repeats:YES];
+            [self startTimer];
         }
     }
     // 循环滚动需要多俩张图片   头和脚
@@ -84,15 +79,14 @@
         count++;
     }
     
-    self.pageC = [[UIPageControl alloc] initWithFrame:CGRectMake(0, self.frame.size.height - 40, self.frame.size.width, 30)];
     self.pageC.numberOfPages = names.count - 2;
-    [self addSubview:self.pageC];
     
     [self.scroll setContentOffset:CGPointMake(self.scroll.frame.size.width, 0)];
 }
 
 
-
+#pragma mark --
+#pragma mark privateMethod
 - (void)timeAction:(NSTimer *)timer
 {
     // 触发之后页数+1
@@ -116,17 +110,34 @@
     }
 }
 
+- (void)startTimer
+{
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(timeAction:) userInfo:nil repeats:YES];
+}
+
+- (void)stopTimer
+{
+    [self.timer invalidate];//停止
+    self.timer = nil;
+}
+
 #pragma mark -
 #pragma mark 协议方法,实现循环滚动
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+   
+}
+
+
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
+     [self stopTimer];
     // 判断为最后一张时,改变偏移量
     CGPoint point = scrollView.contentOffset;
     CGSize size = scrollView.contentSize;
     CGFloat width = scrollView.frame.size.width;
     
     self.page = point.x / width;
-    
     
     if (point.x == size.width - width) {
         self.page = 1;
@@ -137,6 +148,7 @@
     }
     self.pageC.currentPage = self.scroll.contentOffset.x / self.scroll.frame.size.width - 1;
     self.scroll.contentOffset = CGPointMake(self.scroll.contentOffset.x, 0);
+    [self startTimer];
 }
 
 #pragma mark -
@@ -172,5 +184,32 @@
     return;
     
 }
+
+
+#pragma mark --
+#pragma mark 懒加载
+-(UIScrollView *)scroll
+{
+    if (!_scroll) {
+        _scroll = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height)];
+        _scroll.delegate = self;
+        _scroll.bounces = NO;
+        _scroll.showsHorizontalScrollIndicator = NO;
+        [self addSubview:_scroll];
+    }
+    return _scroll;
+}
+
+-(UIPageControl *)pageC
+{
+    if (!_pageC) {
+        _pageC = [[UIPageControl alloc] initWithFrame:CGRectMake(0, self.frame.size.height - 40, self.frame.size.width, 30)];
+        _pageC.userInteractionEnabled = NO;
+        [self addSubview:_pageC];
+    }
+    return _pageC;
+}
+
+
 
 @end
